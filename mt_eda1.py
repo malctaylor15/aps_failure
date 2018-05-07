@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-import requests
 
 #Data from https://archive.ics.uci.edu/ml/machine-learning-databases/00421/
 
@@ -26,6 +25,12 @@ len(set([col[:2] for col in data_raw.columns]))
 # Quick look for categorical variables
 counts = {col:data_raw[col].nunique() for col in data_raw.columns if data_raw[col].nunique() <100}
 counts
+
+
+
+# Quick look at how many values are nas
+(data_raw == "na").sum(axis=0)
+(data_raw == "nan").sum(axis=0)
 
 
 """
@@ -59,10 +64,16 @@ Y = data_raw["class"]
 
 
 """
+
+data_raw_small  = data_raw.iloc[0:10000,:]
+
+#data_raw_small.apply(pd.value_counts)["na"]
+
 from clean_data1 import clean_data
-X, Y = clean_data(data_raw)
+X, Y = clean_data(data_raw_small)
 
 Y.value_counts(normalize=True)
+
 
 from sklearn.model_selection import train_test_split
 X_train, X_test, y_train, y_test = train_test_split(X,Y, test_size = 0.25, random_state = 1)
@@ -73,11 +84,16 @@ compare_samples = pd.DataFrame({"Train":y_train.value_counts(normalize=True),
 
 compare_samples
 
-from sklearn.preprocessing import StandardScaler
-scaler = StandardScaler().fit(X_train)
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
+scaler = MinMaxScaler().fit(X_train)
 X_train = pd.DataFrame(scaler.transform(X_train), columns=X_train.columns)
 X_test = pd.DataFrame(scaler.transform(X_test), columns = X_test.columns)
 
+
+max_train = X_train.apply(np.max, axis = 0)
+max_test = X_test.apply(np.max, axis = 0)
+len(max_train)
+len([col_max for col_max in max_test if col_max > 1])
 
 
 import keras
@@ -97,7 +113,7 @@ def encoder_fx1(n_hidden_nodes_1=20,n_hidden_nodes_2=10, dropout_p = 0.5):
     bn = BatchNormalization()(drop)
 
     encoded = Dense(n_hidden_nodes_2, input_shape = (n_cols,), activation="relu")(bn)
-    drop = Dropout(dropout_p, seed=1234)(encoded)
+    drop = Dropout(dropout_p, seed=123)(encoded)
     bn = BatchNormalization()(drop)
 
     decoded = Dense(n_hidden_nodes, input_shape = (n_cols,), activation="relu")(bn)
@@ -128,11 +144,8 @@ def col_pct_diff(y_true, y_pred):
 
 
 encoder = encoder_fx2(60)
-encoder.compile(optimizer="adam", loss="binary_crossentropy", metrics = [col_pct_diff])
+encoder.compile(optimizer="adam", loss="binary_crossentropy")#, metrics = [col_pct_diff])
 # encoder.compile(optimizer="adam", loss="mse")
-
-
-
 
 encoder.summary()
 
@@ -168,6 +181,11 @@ encoder.summary()
 
 train_preds = encoder.predict(X_train)
 train_preds.shape == X_train.shape
+
+max_train_preds = pd.DataFrame(train_preds).apply(np.max, axis=0)
+len([x for x in max_train_preds if x <0])
+
+
 
 diff_dict = {}
 for col_index in range(X_train.shape[1]):
