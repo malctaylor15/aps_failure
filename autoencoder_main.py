@@ -62,7 +62,7 @@ encoder.compile(optimizer="adam", loss="binary_crossentropy")#, metrics = [col_p
 
 encoder.summary()
 K.get_value(encoder.optimizer.lr)
-encoder.optimizer.lr = 0.00005
+encoder.optimizer.lr = 0.001
 model1 = encoder.fit(X_train, X_train, epochs = 10, validation_split=0.1)
 
 
@@ -87,45 +87,33 @@ X_train.iloc[0:5, 0:5]
 
 # How many predictions are within 10% of train
 
-within_match = abs(X_train.iloc[:,col_index].astype(np.float64) - train_preds.iloc[:,col_index])
-(within_match > 0).sum()
+within_match = abs(X_train.astype(np.float64) - train_preds)
+#within_match2.apply(lambda x: sum(True if row>0.05 else False for row in x), axis = 0)
 
-within_match2 = abs(X_train.astype(np.float64) - train_preds)
-np.sort((within_match2 > 0.05).sum(axis= 0))
-np.mean((within_match2 > 0.05).sum(axis= 0))
+# Check the match differences less than x
+# Want the counts to be high (so that means more observations are close to the originals)
+numb_match = within_match.apply(lambda x: sum(x.le(0.05))/len(x))
+numb_match.head()
+numb_match.describe()
 
+numb_match2 = within_match.apply(lambda x: sum(x.le(0.15))/len(x))
+numb_match2.head()
+numb_match2.describe()
 
-
-diff_dict = {}
-for col_index in range(X_train.shape[1]):
-    col_name = X_train.columns[col_index]
-    #diff = (X_train.iloc[:,col_index].astype(np.float64) -
-    #train_preds.iloc[:,col_index])(X_test.iloc[:,col_index].astype(np.float64) - preds[:,col_index/X_train.iloc[:,col_index].astype(np.float64)
-
-    diff = [0 if x == -np.inf else x for x in diff]
-    diff = np.nanmean(diff)
-    diff_dict[col_name] = diff
-
-train_diff = pd.Series(diff_dict)
-train_diff.head()
-train_diff.describe()
-
+# Number of observations that have less than 6000 matches within the limit
+len(numb_match[numb_match <0.80])
+numb_match[numb_match <0.80]
 
 
 ##### Test set
 
-preds = encoder.predict(X_test)
+test_preds = encoder.predict(X_test)
 X_test.shape == preds.shape
 
+test_diff = X_test.astype(np.float64) - test_preds
+test_numb_match = test_diff.apply(lambda x: sum(x.le(0.15))/len(x))
+test_numb_match.head()
+test_numb_match.describe()
 
-diff_dict = {}
-for col_index in range(X_test.shape[1]):
-    col_name = X_test.columns[col_index]
-    diff = (X_test.iloc[:,col_index].astype(np.float64) - preds[:,col_index])/X_test.iloc[:,col_index].astype(np.float64)
-    diff = [0 if x == -np.inf else x for x in diff]
-    avg_diff = np.nanmean(diff)
-    diff_dict[col_name] = avg_diff
-
-diff = pd.Series(diff_dict)
-diff.head()
-diff.describe()
+len(test_numb_match[test_numb_match <0.60])
+test_numb_match[test_numb_match <0.60]
