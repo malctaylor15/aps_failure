@@ -14,7 +14,8 @@ def clean_data(data_raw, pct_nas = 0.15):
     print("Finished replacing....")
 
     X = data1.drop(["class"], axis = 1)
-    Y = data_raw["class"]
+    Y = data_raw["class"].apply(lambda x: 1 if x =="neg" else 0)
+    
 
     print("Shape before: " + str(data_raw.shape))
     print("Shape after: "+ str(X.shape))
