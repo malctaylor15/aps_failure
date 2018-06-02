@@ -2,6 +2,12 @@ import pandas as pd
 import numpy as np
 import os
 import matplotlib.pyplot as plt
+from importlib import reload
+
+import tree_utils
+reload(tree_utils)
+from tree_utils import *
+
 %matplotlib inline
 !pwd
 os.chdir("/home/malcolm/Documents/aps_failure")
@@ -39,12 +45,15 @@ compare_samples
 
 from sklearn.ensemble import RandomForestClassifier
 
-estimator = RandomForestClassifier(n_estimators = 40, max_depth = 4, random_state=4, class_weight={1:1, 0:50})
+
+estimator = RandomForestClassifier(n_estimators = 40, max_depth = 4, random_state=4, class_weight={1:10, 0:500})
 estimator.fit(X_train, y_train)
 
 estimator.score(X_train, y_train)
 preds1 = estimator.predict(X_train)
+
 from sklearn.metrics import confusion_matrix
+custom_score_aps(y_train, preds1)
 pd.DataFrame(confusion_matrix(y_train, preds1), columns = ["Actual_0", "Actual_1"], index = ["Pred_0", "Pred_1"])
 
 # Test set evaluation
@@ -56,28 +65,11 @@ len(estimator.feature_importances_)
 
 # Feature importance stuff
 feat_imp = pd.DataFrame(estimator.feature_importances_, index = X_train.columns, columns = ["Feat_Importance"])
-feat_imp.sort_values(ascending = False, by = "Feat_Importance", inplace=True)
-feat_imp.head()
-feat_imp.tail()
-sum(feat_imp.iloc[:,0] == 0)
-feat_imp.sum(axis=0)
 
-feat_imp["Cum_Imp"] = feat_imp["Feat_Importance"].cumsum()
-feat_imp["Diff_Feat_Imp"] = feat_imp["Feat_Importance"].diff()
-(feat_imp["Diff_Feat_Imp"]*-40).head()
+feat_imp2 = get_cum_feat_imp(feat_imp)
+plot_cum_feat_imp(feat_imp2)
+custom_score_aps(y_test, preds_test)
 
-numb_feat_range = range(0,len(feat_imp))
-
-plt.ioff()
-plt.title("Cumulative Feature Importance")
-line1, = plt.plot(numb_feat_range, feat_imp["Cum_Imp"], color = "blue", label = "Cumulative Importance")
-line2, = plt.plot(numb_feat_range, -40*feat_imp["Diff_Feat_Imp"], color = "red", label = "Differential Feature Importance")
-plt.ylabel("Cumulative Feature importance")
-plt.xlabel("Number of variables")
-# plt.xticks(np.arange(0, len(feat_imp), 10))
-plt.legend([line1, line2])
-
-plt.show()
 
 cum_cutoff = 0.90
 indiv_cutoff = 0.002
@@ -98,49 +90,36 @@ import xgboost as xgb
 
 # Set weights for high and low class and set up data frames for xgb
 set_weights_tr = [1 if y == 1 else 100 for y in y_train]
-xgb_dtrain = xgb.DMatrix(X_train.values, label = y_train, weight = set_weights, feature_names = X_train.columns)
+xgb_dtrain = xgb.DMatrix(X_train.values, label = y_train, weight = set_weights_tr, feature_names = X_train.columns)
 xgb_dtest = xgb.DMatrix(X_test.values, label = y_test, feature_names = X_test.columns)
 
 # Parameters and train model
-params = {'max_depth':3, 'eta':0.3, 'silent':1, 'objective':'binary:logistic' }
-n_rounds = 40
+params = {'max_depth':4, 'eta':0.2, 'silent':1, 'objective':'binary:logistic' }
+n_rounds = 100
 xgb_model = xgb.train(params, xgb_dtrain, n_rounds)
+
+# Get predictions
+import tree_utils
+reload(tree_utils)
+from tree_utils import *
+
+xg_preds_test = xgb_model.predict(xgb_dtest)
 
 ### Begin model analysis
 xg_feat_imp = xgb_model.get_fscore()
 xg_feat_imp_pd = pd.DataFrame(xgb_model.get_fscore() , index = ["Feat_Importance_Raw"]).T
-xg_feat_imp_pd.columns
-xg_feat_imp_pd.sort_values(ascending = False, by="Feat_Importance_Raw", inplace= True)
-xg_feat_imp_pd.head()
-# Create dataframe with columns to RF above
 xg_feat_imp_pd["Feat_Importance"] = xg_feat_imp_pd["Feat_Importance_Raw"]/xg_feat_imp_pd["Feat_Importance_Raw"].sum()
-xg_feat_imp_pd["Cum_Imp"] = xg_feat_imp_pd["Feat_Importance"].cumsum()
-xg_feat_imp_pd["Diff_Feat_Imp"] = xg_feat_imp_pd["Feat_Importance"].diff()
-xg_feat_imp_pd.head(10)
+xg_feat_imp_pd.sort_values(ascending = False, by="Feat_Importance_Raw", inplace= True)
 
-# Create similar plot as to above
-numb_feat_range = range(0,len(xg_feat_imp_pd))
-plt.ioff()
-plt.title("Cumulative Feature Importance")
-line1, = plt.plot(numb_feat_range, xg_feat_imp_pd["Cum_Imp"], color = "blue", label = "Cumulative Importance")
-line2, = plt.plot(numb_feat_range, -40*xg_feat_imp_pd["Diff_Feat_Imp"], color = "red", label = "Differential Feature Importance")
-plt.ylabel("Cumulative Feature importance")
-plt.xlabel("Number of variables")
-# plt.xticks(np.arange(0, len(feat_imp), 10))
-plt.legend([line1, line2])
-plt.show()
-
-
+xg_feat_imp2 = get_cum_feat_imp(xg_feat_imp_pd)
+plot_cum_feat_imp(xg_feat_imp2)
+custom_score_aps()
 
 
 
 
 ######## Compare feature importances
 xg_feat_imp_pd.head()
-
-feat_imp.head()
-
-
 # Feature ordering -- see if RF matches GB (gb truth)
-pd.merge ....
+pd.merge()
 # can compare relative feature importances
