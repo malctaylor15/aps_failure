@@ -45,16 +45,16 @@ def plot_cum_feat_imp(feat_imp, title = "Cumulative Feature Importance"):
     plt.show()
     plt.close()
 
-def custom_score_aps(y_true, y_preds, pct=True):
+def custom_score_aps(y_true, y_preds, pct=True, show_output = True):
     conf_matrix = pd.DataFrame(confusion_matrix(y_true, y_preds), \
-    columns = ["Actual_0", "Actual_1"], index = ["Pred_0", "Pred_1"])
+    columns = ["Pred_0", "Pred_1"], index = ["Actual_0", "Actual_1"])
 
-    print(conf_matrix)
+    if show_output: print(conf_matrix)
 
-    weighted_score = 10 * conf_matrix["Actual_0"].loc["Pred_1"] \
-    + 500 * conf_matrix["Actual_1"].loc["Pred_0"]
+    weighted_score = 10 * conf_matrix["Pred_0"].loc["Actual_1"] \
+    + 500 * conf_matrix["Pred_1"].loc["Actual_0"]
 
-    if pct = True:
-        weighted_score = weighted_score/len(y_train)
+    if pct == True:
+        weighted_score = weighted_score/len(y_true)
 
     return(weighted_score)
