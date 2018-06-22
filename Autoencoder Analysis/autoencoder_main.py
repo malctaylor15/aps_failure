@@ -1,6 +1,10 @@
 import pandas as pd
 import numpy as np
+import sys
+import os
 
+# Add Autoencoder directory to path... later will need to add auto encoder functional files
+sys.path.append(os.getcwd()+"/Autoencoder Analysis")
 #Data from https://archive.ics.uci.edu/ml/machine-learning-databases/00421/
 
 #data_raw = pd.read_csv("https://archive.ics.uci.edu/ml/machine-learning-databases/00421/aps_failure_training_set.csv", skiprows = 20)
@@ -48,6 +52,7 @@ from keras.models import Model, Sequential
 from keras.layers import Dense, BatchNormalization, Dropout, Input
 from keras.optimizers import Adam
 from keras import backend as K
+
 
 import autoencoders_model_fx
 from importlib import reload
@@ -108,7 +113,7 @@ numb_match[numb_match <0.80]
 ##### Test set
 
 test_preds = encoder.predict(X_test)
-X_test.shape == preds.shape
+X_test.shape == test_preds.shape
 
 test_diff = X_test.astype(np.float64) - test_preds
 test_numb_match = test_diff.apply(lambda x: sum(x.le(0.15))/len(x))
@@ -117,3 +122,7 @@ test_numb_match.describe()
 
 len(test_numb_match[test_numb_match <0.60])
 test_numb_match[test_numb_match <0.60]
+
+
+
+# One flaw of this approach is that variables in the test set may  have scaled values greater than 1.0. If there are variables with values greater than 1.0, the cutoff would prevent the model from correctly identifying those values.  
