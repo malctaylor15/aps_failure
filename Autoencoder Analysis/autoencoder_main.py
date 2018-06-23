@@ -42,8 +42,8 @@ max_train = X_train.apply(np.max, axis = 0)
 max_test = X_test.apply(np.max, axis = 0)
 len(max_train)
 len([col_max for col_max in max_test if col_max > 1])
-(X_train == 0).sum(axis=0)
-(data_raw == "").sum(axis=0)
+# (X_train == 0).sum(axis=0)
+# (data_raw == "").sum(axis=0)
 
 
 
@@ -75,9 +75,41 @@ model1 = encoder.fit(X_train, X_train, epochs = 10, validation_split=0.1)
 model1.history.keys()
 from plot_nn_metric import plot_nn_metric
 plot_nn_metric(model1.history)
+####
+# get the auto encoder layer outputs
+# Should be 10kx60 (from a sample of 10kx142)
+
+
+encoder.layers[2].name
+encoder.layers[1].output
+get_1st_layer_output = K.function([encoder.layers[0].input],
+                                  [encoder.layers[2].output])
+layer_output = get_1st_layer_output([X_train])
+
+output1 = pd.DataFrame(layer_output[0])
+output1["class"] = y_train
+
+encoding_w_orig_data = pd.concat([output1, X_train], axis =1)
+encoding_w_orig_data.shape
+output1.to_csv("Autoencoder Analysis/Temp Autoencoded Vals.csv", index = False)
+encoding_w_orig_data.to_csv("Autoencoder Analysis/Encodings_with_original.csv", index = False)
+
+from keras import backend as K
+
+inp = model.input                                           # input placeholder
+outputs = [layer.output for layer in model.layers]          # all layer outputs
+functors = [K.function([inp]+ [K.learning_phase()], [out]) for out in outputs]  # evaluation functions
+
+# Testing
+test = np.random.random(input_shape)[np.newaxis,...]
+layer_outs = [func([test, 1.]) for func in functors]
+print layer_outs
+
+####
 
 
 #####
+# Begin evaluating train - test performances
 
 train_preds = encoder.predict(X_train)
 train_preds = pd.DataFrame(np.clip(train_preds, 0, 1), columns = X_train.columns)
@@ -125,4 +157,4 @@ test_numb_match[test_numb_match <0.60]
 
 
 
-# One flaw of this approach is that variables in the test set may  have scaled values greater than 1.0. If there are variables with values greater than 1.0, the cutoff would prevent the model from correctly identifying those values.  
+# One flaw of this approach is that variables in the test set may  have scaled values greater than 1.0. If there are variables with values greater than 1.0, the cutoff would prevent the model from correctly identifying those values.
