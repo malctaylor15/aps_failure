@@ -8,13 +8,14 @@ sys.path.append(os.getcwd()+"/Autoencoder Analysis")
 #Data from https://archive.ics.uci.edu/ml/machine-learning-databases/00421/
 
 #data_raw = pd.read_csv("https://archive.ics.uci.edu/ml/machine-learning-databases/00421/aps_failure_training_set.csv", skiprows = 20)
-data_raw = pd.read_csv("aps_failure_training_set.csv", skiprows = 20)
+data_raw = pd.read_csv("../aps_failure_training_set.csv", skiprows = 20)
 
 # Try to understand data
 data_raw.shape
 data_raw.head()
 
-data_raw_small  = data_raw.iloc[0:10000,:]
+# data_raw_small  = data_raw.iloc[0:10000,:]
+data_raw_small = data_raw
 
 #data_raw_small.apply(pd.value_counts)["na"]
 
@@ -91,19 +92,19 @@ output1["class"] = y_train
 
 encoding_w_orig_data = pd.concat([output1, X_train], axis =1)
 encoding_w_orig_data.shape
-output1.to_csv("Autoencoder Analysis/Temp Autoencoded Vals.csv", index = False)
-encoding_w_orig_data.to_csv("Autoencoder Analysis/Encodings_with_original.csv", index = False)
+output1.to_csv("Temp Autoencoded Vals.csv", index = False)
+encoding_w_orig_data.to_csv("Encodings_with_original.csv", index = False)
 
-from keras import backend as K
-
-inp = model.input                                           # input placeholder
-outputs = [layer.output for layer in model.layers]          # all layer outputs
-functors = [K.function([inp]+ [K.learning_phase()], [out]) for out in outputs]  # evaluation functions
-
-# Testing
-test = np.random.random(input_shape)[np.newaxis,...]
-layer_outs = [func([test, 1.]) for func in functors]
-print layer_outs
+# from keras import backend as K
+#
+# inp = model.input                                           # input placeholder
+# outputs = [layer.output for layer in model.layers]          # all layer outputs
+# functors = [K.function([inp]+ [K.learning_phase()], [out]) for out in outputs]  # evaluation functions
+#
+# # Testing
+# test = np.random.random(input_shape)[np.newaxis,...]
+# layer_outs = [func([test, 1.]) for func in functors]
+# print layer_outs
 
 ####
 
